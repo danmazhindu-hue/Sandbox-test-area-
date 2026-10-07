@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "passages": {
+    "2": {
+      "sha": "f5cac9fa304b",
+      "codes": [
+        "sop"
+      ],
+      "free": [
+        "ritual"
+      ]
+    },
+    "3": {
+      "sha": "5e21823e7f82",
+      "codes": [
+        "expertise_status"
+      ],
+      "free": []
+    },
+    "4": {
+      "sha": "87d36b5aee66",
+      "codes": [
+        "technology"
+      ],
+      "free": []
+    },
+    "5": {
+      "sha": "40ccb613ed8f",
+      "codes": [
+        "classification"
+      ],
+      "free": []
+    }
+  }
+}

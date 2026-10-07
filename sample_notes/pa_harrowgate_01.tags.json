@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "passages": {
+    "1": {
+      "sha": "f24030892998",
+      "codes": [
+        "sop"
+      ],
+      "free": []
+    },
+    "2": {
+      "sha": "c4405c79d12b",
+      "codes": [
+        "expertise_status"
+      ],
+      "free": [
+        "informal authority"
+      ]
+    },
+    "4": {
+      "sha": "485224089031",
+      "codes": [
+        "technology"
+      ],
+      "free": []
+    },
+    "5": {
+      "sha": "3a285f616962",
+      "codes": [
+        "classification"
+      ],
+      "free": []
+    }
+  }
+}

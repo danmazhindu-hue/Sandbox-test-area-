@@ -1,0 +1,54 @@
+{
+  "version": 1,
+  "passages": {
+    "1": {
+      "sha": "be20098bd7f9",
+      "codes": [
+        "sop"
+      ],
+      "free": [
+        "ritual"
+      ]
+    },
+    "2": {
+      "sha": "e817d5122ace",
+      "codes": [
+        "sop"
+      ],
+      "free": []
+    },
+    "3": {
+      "sha": "23a904cb7346",
+      "codes": [
+        "expertise_status"
+      ],
+      "free": [
+        "informal authority"
+      ]
+    },
+    "4": {
+      "sha": "9a8342249b28",
+      "codes": [
+        "technology"
+      ],
+      "free": [
+        "paper vs app trust"
+      ]
+    },
+    "5": {
+      "sha": "e7f1dd77604a",
+      "codes": [
+        "classification"
+      ],
+      "free": []
+    },
+    "6": {
+      "sha": "2b0e9eb099fe",
+      "codes": [],
+      "free": [
+        "ritual",
+        "newcomers"
+      ]
+    }
+  }
+}

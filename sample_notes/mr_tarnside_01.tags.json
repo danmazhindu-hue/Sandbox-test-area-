@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "passages": {
+    "2": {
+      "sha": "2192e38261bc",
+      "codes": [
+        "sop"
+      ],
+      "free": [
+        "ritual"
+      ]
+    },
+    "3": {
+      "sha": "c47460abaa41",
+      "codes": [
+        "expertise_status"
+      ],
+      "free": [
+        "informal authority"
+      ]
+    },
+    "4": {
+      "sha": "980bfd293dfb",
+      "codes": [
+        "technology",
+        "expertise_status"
+      ],
+      "free": [
+        "paper vs app trust"
+      ]
+    },
+    "5": {
+      "sha": "98badc1e82ef",
+      "codes": [
+        "classification"
+      ],
+      "free": [
+        "category from police"
+      ]
+    }
+  }
+}

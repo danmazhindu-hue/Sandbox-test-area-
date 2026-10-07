@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "passages": {
+    "1": {
+      "sha": "c2b2b35baf02",
+      "codes": [
+        "classification"
+      ],
+      "free": [
+        "unofficial category"
+      ]
+    },
+    "3": {
+      "sha": "e642eae73d55",
+      "codes": [
+        "sop"
+      ],
+      "free": [
+        "knowing who to ring"
+      ]
+    },
+    "4": {
+      "sha": "260952b3270e",
+      "codes": [
+        "technology"
+      ],
+      "free": []
+    }
+  }
+}

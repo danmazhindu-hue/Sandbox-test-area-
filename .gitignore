@@ -1,0 +1,8 @@
+# Real fieldnotes, their tags and any exports must never be committed.
+notes/
+exports/
+*.tags.json
+# ...except the invented sample data.
+!sample_notes/*.tags.json
+__pycache__/
+.tmp-*

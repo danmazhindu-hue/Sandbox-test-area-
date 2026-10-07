@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "passages": {
+    "2": {
+      "sha": "3a4cd740e685",
+      "codes": [
+        "expertise_status"
+      ],
+      "free": []
+    },
+    "3": {
+      "sha": "97d4aa0129df",
+      "codes": [
+        "classification"
+      ],
+      "free": [
+        "gap between team and police view"
+      ]
+    },
+    "4": {
+      "sha": "0f13bb14d8ee",
+      "codes": [
+        "sop"
+      ],
+      "free": []
+    }
+  }
+}
