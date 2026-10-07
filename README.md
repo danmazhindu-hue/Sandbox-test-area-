@@ -24,12 +24,25 @@ python3 -m unittest discover -s tests
 
 For real work: `python3 fieldcode.py init`, put notes in `notes/` (the default `--notes-dir`), and drop the flag.
 
+## Point-and-click page (`fieldcode.html`)
+
+Prefer not to use the terminal? Open `fieldcode.html` by double-clicking it (use **Chrome or Edge** for automatic saving). Click **Open notes folder…**, choose `sample_notes` to try it (or your own `notes/`), then:
+
+- **Code notes:** pick a note on the left; click the code buttons under each passage (or press `1`-`4`; `j`/`k` move between passages). Type a free-text code and press Enter. Every click updates the counts and, in Chrome/Edge, is written straight into the same `.tags.json` files the command-line tool uses, so the two always agree.
+- **Summary:** the count table, by agency or by field site.
+- **Passages by code:** everything per code, grouped by site and agency. Copy it or download it as markdown.
+- **Search:** text or regex, filtered by code, site or agency.
+
+Firefox and Safari can't write into a folder, so there the page works in an edit-in-memory mode and you finish with **Download tag files**, then put the downloaded files next to their notes. If you edit a note's text later, affected passages show a warning and you choose to keep or discard their tags.
+
+How it stays private: it is one self-contained file with no libraries, fonts or images fetched from anywhere. A content-security-policy inside it blocks every network request (`default-src 'none'`), and it never uses browser storage, so your text lives only in the page's memory and the files you choose to save. Note text is always HTML-escaped. Tests check the policy and that the page agrees with the Python tool.
+
 ## Note format
 
 ```markdown
 ---
 site: Aldermoor Fell
-agency: Mountain Rescue        # Mountain Rescue | Lowland Rescue | Police Force A | Police Force B
+agency: Mountain Rescue
 date: 2024-03-02
 ---
 
@@ -37,6 +50,8 @@ date: 2024-03-02
 
 Each blank-line-separated paragraph is one passage, numbered from 1.
 ```
+
+`agency` must be exactly one of Mountain Rescue, Lowland Rescue, Police Force A, Police Force B (case and punctuation are ignored; no trailing comments on the line). `check` reports anything else.
 
 Tags for `foo.md` live in `foo.tags.json`. Each tagged passage stores its number, a short SHA-256 of its text, and its codes. If you later edit a passage, `check` flags the tag as **stale** and it is excluded from export, summary and tagged search, rather than silently attaching a code to the wrong text. Fixed codes are validated (typos are rejected with a suggestion); anything free-form must go through `--free`.
 
@@ -65,6 +80,7 @@ Check your institution's ethics approval, consent terms and data-protection obli
 
 ## Layout
 
-- `fieldcode.py`: the whole tool
+- `fieldcode.py`: the command-line tool
+- `fieldcode.html`: the point-and-click page (same tag files)
 - `sample_notes/`: invented notes plus example tags
-- `tests/`: unit tests (`python3 -m unittest discover -s tests`)
+- `tests/`: unit tests (`python3 -m unittest discover -s tests`); `tests/html_smoke.mjs` is an optional browser check (`node tests/html_smoke.mjs`, needs Playwright)

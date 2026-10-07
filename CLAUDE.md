@@ -13,3 +13,5 @@ Constraints that must be preserved:
 - Real data lives only in `notes/` and `exports/` (git-ignored). Never read, create or commit real fieldnotes; use only the invented `sample_notes/`.
 - Tags are keyed by passage number plus a text hash. Editing a passage makes its tags stale on purpose, so do not renumber or "heal" tags automatically.
 - Fixed codes are `FIXED_CODES`; free-text codes are stored lowercase and addressed as `free:<text>`.
+
+`fieldcode.html` is a second, self-contained front end over the same `.tags.json` files (no build step). It re-implements the parsing, SHA-256 passage hash, summary and markdown export in JS, so any change to those in `fieldcode.py` must be mirrored there. Keep its CSP (`default-src 'none'`), and do not add `fetch`, browser storage, external scripts/styles/fonts or any URL. `node tests/html_smoke.mjs` (needs Playwright; set `PLAYWRIGHT_MODULE` to its path if not resolvable) checks it against the Python output.

@@ -1,0 +1,589 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- This policy blocks every network request the page could make: scripts, styles, images, fonts, forms and connections. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data:; form-action 'none'; base-uri 'none'">
+<title>fieldcode – code fieldnotes</title>
+<style>
+:root{
+  --bg:#f6f5f2; --panel:#fff; --ink:#1c1d21; --muted:#6a6e78; --line:#dedbd3; --accent:#2b5fd9; --accent-ink:#fff;
+  --warn:#9a5b00; --warn-bg:#fff4dc; --ok:#1d7a46;
+  --c-sop:#2b5fd9; --c-exp:#8a3fc4; --c-tech:#0c7d7d; --c-class:#b4531a; --c-free:#555b66;
+  --shadow:0 1px 2px rgba(0,0,0,.06);
+}
+@media (prefers-color-scheme:dark){
+  :root{ --bg:#16171a; --panel:#1f2024; --ink:#ececf0; --muted:#9a9ea8; --line:#34363c; --accent:#6f95ff; --accent-ink:#0d1020;
+    --warn:#f0b455; --warn-bg:#3a2d12; --ok:#58c98a;
+    --c-sop:#7ea3ff; --c-exp:#c79bff; --c-tech:#4fd0d0; --c-class:#f19a63; --c-free:#aab0bb; --shadow:none; }
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;display:flex;flex-direction:column}
+button{font:inherit;color:inherit;cursor:pointer}
+input,select{font:inherit;color:inherit}
+header{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;padding:10px 16px;background:var(--panel);border-bottom:1px solid var(--line)}
+header h1{font-size:17px;margin:0;font-weight:650}
+.badge{font-size:12px;color:var(--ok);border:1px solid currentColor;border-radius:999px;padding:1px 9px;white-space:nowrap}
+.spacer{flex:1}
+.btn{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:6px 12px}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+#status{font-size:13px;color:var(--muted)}
+#status.unsaved{color:var(--warn);font-weight:600}
+nav{display:flex;gap:2px;padding:0 12px;background:var(--panel);border-bottom:1px solid var(--line)}
+nav button{border:0;background:none;padding:10px 14px;border-bottom:3px solid transparent;color:var(--muted)}
+nav button[aria-selected=true]{color:var(--ink);border-color:var(--accent);font-weight:600}
+nav button[disabled]{opacity:.4;cursor:not-allowed}
+#layout{flex:1;min-height:0;display:flex}
+#side{width:290px;flex:none;overflow:auto;border-right:1px solid var(--line);background:var(--panel);padding:10px}
+#side input{width:100%;padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);margin-bottom:8px}
+#side h3{font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin:14px 4px 2px}
+#side h4{font-size:13px;margin:6px 4px 2px;font-weight:600}
+.nitem{display:block;width:100%;text-align:left;border:0;background:none;padding:5px 8px;border-radius:6px;font-size:13px}
+.nitem:hover{background:var(--bg)}
+.nitem.active{background:var(--accent);color:var(--accent-ink)}
+.nitem small{display:block;opacity:.75}
+#main{flex:1;overflow:auto;padding:20px 24px 80px}
+.wrap{max-width:860px;margin:0 auto}
+.empty{max-width:640px;margin:8vh auto;text-align:center}
+.empty h2{margin:0 0 6px}
+.empty ol{text-align:left;color:var(--muted)}
+.notehead h2{margin:0}
+.meta{color:var(--muted);font-size:13px;margin:2px 0 14px}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin:6px 0 18px}
+.bar i{display:block;height:100%;background:var(--ok)}
+.card{display:flex;gap:12px;background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:12px;box-shadow:var(--shadow)}
+.card:focus{outline:2px solid var(--accent);outline-offset:1px}
+.card.tagged{border-left-color:var(--ok)}
+.card.stale{border-left-color:var(--warn);background:var(--warn-bg)}
+.num{flex:none;width:26px;color:var(--muted);font-size:13px;padding-top:2px}
+.card .body{flex:1;min-width:0}
+.text{margin:0 0 10px;white-space:pre-wrap}
+.codes,.free{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.free{margin-top:8px}
+.chip{border:1px solid var(--line);background:var(--bg);border-radius:999px;padding:3px 11px;font-size:13px}
+.chip kbd{font:11px ui-monospace,monospace;opacity:.6;margin-right:5px}
+.chip:hover{border-color:currentColor}
+.chip.on{color:#fff;border-color:transparent}
+.chip.on kbd{opacity:.8}
+.c-sop{--c:var(--c-sop)} .c-exp{--c:var(--c-exp)} .c-tech{--c:var(--c-tech)} .c-class{--c:var(--c-class)}
+.chip[class*=" c-"]:hover{color:var(--c)}
+.chip.on[class*=" c-"]{background:var(--c);color:var(--accent-ink)}
+.fchip{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--c-free);color:var(--c-free);border-radius:6px;padding:1px 4px 1px 9px;font-size:13px}
+.fchip button{border:0;background:none;padding:0 4px;color:inherit;font-size:15px;line-height:1}
+.freeinput{border:1px dashed var(--line);background:transparent;border-radius:6px;padding:3px 9px;font-size:13px;min-width:230px}
+.freeinput:focus{outline:2px solid var(--accent);border-style:solid}
+.stalebox{margin-top:8px;font-size:13px;color:var(--warn);display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.toolbar{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;margin:0 0 16px}
+.toolbar label{font-size:13px;color:var(--muted);display:flex;gap:6px;align-items:center}
+.toolbar select,.toolbar input[type=text],.toolbar input[type=search]{padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:var(--panel)}
+table{border-collapse:collapse;background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden;width:100%}
+th,td{padding:8px 12px;text-align:right;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+th:first-child,td:first-child{text-align:left}
+th{background:var(--bg);font-size:13px}
+tr.total td{font-weight:650;background:var(--bg)}
+.group h2{margin:26px 0 4px;font-size:19px}
+.group h3{margin:16px 0 6px;font-size:14px;color:var(--muted)}
+blockquote{margin:0 0 4px;padding:8px 14px;border-left:3px solid var(--line);background:var(--panel);border-radius:0 8px 8px 0;white-space:pre-wrap}
+.cite{font-size:12px;color:var(--muted);margin:0 0 12px 17px}
+.cite a{color:var(--accent);cursor:pointer;text-decoration:underline}
+.hit{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin-bottom:10px}
+.hit .where{font-size:12px;color:var(--muted);margin-bottom:4px}
+mark{background:#ffe27a;color:#222;border-radius:3px;padding:0 1px}
+.toast{position:fixed;right:16px;bottom:16px;background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;max-width:420px;box-shadow:0 4px 16px rgba(0,0,0,.25);z-index:9}
+.warnbox{background:var(--warn-bg);color:var(--warn);border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:14px}
+.hidden{display:none!important}
+@media (max-width:760px){ #layout{flex-direction:column} #side{width:auto;max-height:36vh;border-right:0;border-bottom:1px solid var(--line)} #main{padding:14px} }
+</style>
+</head>
+<body>
+<header>
+  <h1>fieldcode</h1>
+  <span class="badge" title="A content-security-policy in this file blocks all network requests">🔒 Offline: nothing leaves this computer</span>
+  <span class="spacer"></span>
+  <span id="status"></span>
+  <button class="btn" id="dlBtn" hidden>Download tag files</button>
+  <button class="btn primary" id="openBtn">Open notes folder…</button>
+  <input type="file" id="folderInput" webkitdirectory multiple hidden>
+</header>
+<nav id="tabs" role="tablist">
+  <button role="tab" data-tab="code" aria-selected="true" disabled>Code notes</button>
+  <button role="tab" data-tab="summary" aria-selected="false" disabled>Summary</button>
+  <button role="tab" data-tab="bycode" aria-selected="false" disabled>Passages by code</button>
+  <button role="tab" data-tab="search" aria-selected="false" disabled>Search</button>
+</nav>
+<div id="layout">
+  <aside id="side" class="hidden"></aside>
+  <main id="main"></main>
+</div>
+<datalist id="freelist"></datalist>
+
+<script>
+"use strict";
+/* ---------- constants (mirror fieldcode.py) ---------- */
+const FIXED = ["sop", "expertise_status", "technology", "classification"];
+const LABEL = {sop: "SOP", expertise_status: "Expertise / status", technology: "Technology", classification: "Classification"};
+const CLS = {sop: "c-sop", expertise_status: "c-exp", technology: "c-tech", classification: "c-class"};
+const AGENCIES = ["Mountain Rescue", "Lowland Rescue", "Police Force A", "Police Force B"];
+const ALIASES = {"mountain rescue": AGENCIES[0], "lowland rescue": AGENCIES[1], "police force a": AGENCIES[2],
+  "police a": AGENCIES[2], "police force b": AGENCIES[3], "police b": AGENCIES[3]};
+const UNKNOWN = "(unknown)";
+const FREE = "free:";
+
+/* ---------- SHA-256 (pure JS, so it works on file:// in every browser; matches Python's hashlib) ---------- */
+const K256 = [
+0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,
+0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,
+0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,
+0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,
+0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,
+0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];
+const rotr = (x, n) => (x >>> n) | (x << (32 - n));
+function sha256hex(str) {
+  const bytes = new TextEncoder().encode(str), l = bytes.length;
+  const buf = new Uint8Array(((l + 9 + 63) >> 6) << 6);
+  buf.set(bytes); buf[l] = 0x80;
+  const dv = new DataView(buf.buffer);
+  dv.setUint32(buf.length - 8, Math.floor(l * 8 / 4294967296)); dv.setUint32(buf.length - 4, (l * 8) >>> 0);
+  const H = [0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19], w = new Uint32Array(64);
+  for (let i = 0; i < buf.length; i += 64) {
+    for (let t = 0; t < 16; t++) w[t] = dv.getUint32(i + t * 4);
+    for (let t = 16; t < 64; t++) {
+      const s0 = rotr(w[t-15],7) ^ rotr(w[t-15],18) ^ (w[t-15] >>> 3), s1 = rotr(w[t-2],17) ^ rotr(w[t-2],19) ^ (w[t-2] >>> 10);
+      w[t] = (w[t-16] + s0 + w[t-7] + s1) >>> 0;
+    }
+    let [a,b,c,d,e,f,g,h] = H;
+    for (let t = 0; t < 64; t++) {
+      const t1 = (h + (rotr(e,6) ^ rotr(e,11) ^ rotr(e,25)) + ((e & f) ^ (~e & g)) + K256[t] + w[t]) >>> 0;
+      const t2 = ((rotr(a,2) ^ rotr(a,13) ^ rotr(a,22)) + ((a & b) ^ (a & c) ^ (b & c))) >>> 0;
+      h = g; g = f; f = e; e = (d + t1) >>> 0; d = c; c = b; b = a; a = (t1 + t2) >>> 0;
+    }
+    [a,b,c,d,e,f,g,h].forEach((v, k) => { H[k] = (H[k] + v) >>> 0; });
+  }
+  return H.map(x => x.toString(16).padStart(8, "0")).join("");
+}
+const passageSha = text => sha256hex(text).slice(0, 12);
+
+/* ---------- helpers ---------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const cleanFree = t => t.replace(/\s+/g, " ").trim().toLowerCase();
+const normAgency = raw => ALIASES[(raw || "").toLowerCase().replace(/[^a-z]+/g, " ").trim()] || UNKNOWN;
+const agencyOrder = a => AGENCIES.includes(a) ? AGENCIES.indexOf(a) : AGENCIES.length;
+const codeOrder = k => FIXED.includes(k) ? [0, FIXED.indexOf(k), ""] : [1, 0, k];
+const cmpCode = (a, b) => { const x = codeOrder(a), y = codeOrder(b); return x[0] - y[0] || x[1] - y[1] || x[2].localeCompare(y[2]); };
+const codeLabel = k => k.startsWith(FREE) ? k.slice(FREE.length) + " (free)" : (LABEL[k] || k);
+const plainLabel = k => k.startsWith(FREE) ? k.slice(FREE.length) + " (free)" : k;   // used in markdown export, like the CLI
+
+function parseNote(raw) {
+  raw = raw.replace(/^﻿/, "").replace(/\r\n?/g, "\n");
+  const meta = {}; let body = raw;
+  const m = raw.match(/^---[ \t]*\n([\s\S]*?)\n---[ \t]*\n/);
+  if (m) {
+    for (const line of m[1].split("\n")) { const i = line.indexOf(":"); if (i >= 0) meta[line.slice(0, i).trim().toLowerCase()] = line.slice(i + 1).trim(); }
+    body = raw.slice(m[0].length);
+  }
+  const passages = body.split(/\n[ \t]*\n/).map(b => b.trim()).filter(b => b && !b.startsWith("#"));
+  return {meta, passages};
+}
+
+/* ---------- state ---------- */
+const state = {notes: [], current: null, mode: "none", folderName: "", tab: "code", lastSaved: null, filter: "",
+  summary: {by: "agency", detail: false}, bycode: "", search: {q: "", regex: false, code: "", site: "", agency: ""}};
+
+function buildNote(name, text, tagsText, extra) {
+  const {meta, passages} = parseNote(text);
+  const note = Object.assign({name, site: meta.site || UNKNOWN, agencyRaw: meta.agency || "", agency: normAgency(meta.agency),
+    date: meta.date || "", passages, hashes: passages.map(passageSha), tags: {}, hadTagsFile: false, dirty: false,
+    tagsName: name.replace(/\.md$/i, "") .split("/").pop() + ".tags.json", queue: Promise.resolve()}, extra);
+  if (tagsText != null) {
+    try { note.tags = JSON.parse(tagsText).passages || {}; note.hadTagsFile = true; }
+    catch (e) { toast("Could not read tags for " + name + ": " + e.message); }
+  }
+  return note;
+}
+const staleSet = note => {
+  const s = new Set();
+  for (const [k, e] of Object.entries(note.tags)) { const n = +k; if (n < 1 || n > note.passages.length || e.sha !== note.hashes[n - 1]) s.add(n); }
+  return s;
+};
+const keysFor = (note, n) => { const e = note.tags[n]; return e ? [...e.codes, ...e.free.map(f => FREE + f)] : []; };
+function* tagged() {
+  for (const note of state.notes) {
+    const stale = staleSet(note);
+    for (const k of Object.keys(note.tags).map(Number).sort((a, b) => a - b)) {
+      if (stale.has(k)) continue;
+      const keys = keysFor(note, k);
+      if (keys.length) yield {note, n: k, text: note.passages[k - 1], keys};
+    }
+  }
+}
+const allFree = () => [...new Set(state.notes.flatMap(n => Object.values(n.tags).flatMap(e => e.free)))].sort();
+
+/* ---------- loading ---------- */
+async function loadFromDirHandle(dir) {
+  const files = [];
+  async function walk(d, prefix) {
+    for await (const [name, h] of d.entries()) {
+      if (name.startsWith(".")) continue;
+      if (h.kind === "directory") await walk(h, prefix + name + "/");
+      else files.push({path: prefix + name, handle: h, parent: d});
+    }
+  }
+  await walk(dir, "");
+  const byPath = new Map(files.map(f => [f.path, f]));
+  const notes = [];
+  for (const f of files.filter(f => /\.md$/i.test(f.path)).sort((a, b) => a.path.localeCompare(b.path))) {
+    const tp = f.path.replace(/\.md$/i, ".tags.json"), t = byPath.get(tp);
+    notes.push(buildNote(f.path, await (await f.handle.getFile()).text(), t ? await (await t.handle.getFile()).text() : null, {parent: f.parent}));
+  }
+  state.mode = "fs"; state.folderName = dir.name; setNotes(notes);
+}
+async function loadFromFileList(list) {
+  const files = [...list].map(f => {
+    const parts = (f.webkitRelativePath || f.name).split("/"); if (parts.length > 1) parts.shift();
+    return {path: parts.join("/"), file: f};
+  }).filter(f => !f.path.split("/").some(p => p.startsWith(".")));
+  const byPath = new Map(files.map(f => [f.path, f]));
+  const notes = [];
+  for (const f of files.filter(f => /\.md$/i.test(f.path)).sort((a, b) => a.path.localeCompare(b.path))) {
+    const t = byPath.get(f.path.replace(/\.md$/i, ".tags.json"));
+    notes.push(buildNote(f.path, await f.file.text(), t ? await t.file.text() : null, {}));
+  }
+  state.mode = "files"; state.folderName = (list[0] && list[0].webkitRelativePath || "").split("/")[0] || "selected files"; setNotes(notes);
+}
+function setNotes(notes) {
+  state.notes = notes; state.current = notes[0] || null;
+  if (!notes.length) toast("No .md files found in that folder.");
+  render();
+}
+
+/* ---------- saving ---------- */
+const serialize = note => JSON.stringify({version: 1, passages: note.tags}, null, 2) + "\n";
+function persist(note) {
+  note.dirty = true; updateStatus();
+  note.queue = note.queue.then(async () => {
+    if (!note.hadTagsFile && !Object.keys(note.tags).length) { note.dirty = false; return; }
+    if (state.mode === "fs") {
+      const fh = await note.parent.getFileHandle(note.tagsName, {create: true});
+      const w = await fh.createWritable(); await w.write(serialize(note)); await w.close();
+      note.hadTagsFile = true; note.dirty = false; state.lastSaved = new Date();
+    }
+  }).catch(e => toast("Could not save " + note.tagsName + ": " + e.message)).then(updateStatus);
+}
+function updateStatus() {
+  const el = $("#status"), dirty = state.notes.filter(n => n.dirty).length;
+  $("#dlBtn").hidden = state.mode !== "files";
+  el.className = "";
+  if (state.mode === "none") el.textContent = "";
+  else if (state.mode === "fs") { el.textContent = dirty ? "Saving…" : "✓ Saved to “" + state.folderName + "”" + (state.lastSaved ? " at " + state.lastSaved.toLocaleTimeString() : " (autosave on)"); }
+  else { el.textContent = dirty ? dirty + " note(s) with unsaved tags: use “Download tag files”" : "No changes yet"; if (dirty) el.className = "unsaved"; }
+}
+function downloadTags() {
+  const todo = state.notes.filter(n => n.dirty);
+  todo.forEach((n, i) => setTimeout(() => {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([serialize(n)], {type: "application/json"})); a.download = n.tagsName;
+    document.body.appendChild(a); a.click(); a.remove(); n.dirty = false; updateStatus();
+  }, i * 400));
+  if (todo.length) toast("Put the downloaded .tags.json files next to their notes, replacing the old ones.");
+}
+window.addEventListener("beforeunload", e => { if (state.mode === "files" && state.notes.some(n => n.dirty)) { e.preventDefault(); e.returnValue = ""; } });
+
+/* ---------- tagging operations ---------- */
+function entryFor(note, n) {
+  return note.tags[n] || (note.tags[n] = {sha: note.hashes[n - 1], codes: [], free: []});
+}
+function tidy(note, n) { const e = note.tags[n]; if (e && !e.codes.length && !e.free.length) delete note.tags[n]; }
+function changed(note, n) {
+  persist(note); renderCard(note, n); renderSide(); renderFreeList();
+}
+function toggleFixed(note, n, code) {
+  if (staleSet(note).has(n)) return;
+  const e = entryFor(note, n), i = e.codes.indexOf(code);
+  if (i >= 0) e.codes.splice(i, 1); else e.codes.push(code);
+  tidy(note, n); changed(note, n);
+}
+function addFree(note, n, text) {
+  text = cleanFree(text); if (!text || staleSet(note).has(n)) return;
+  const e = entryFor(note, n); if (!e.free.includes(text)) e.free.push(text);
+  changed(note, n);
+}
+function removeFree(note, n, text) {
+  const e = note.tags[n]; if (!e) return; e.free = e.free.filter(f => f !== text); tidy(note, n); changed(note, n);
+}
+function discardTags(note, n) { delete note.tags[n]; persist(note); if (n <= note.passages.length) renderCard(note, n); renderSide(); renderOrphans(); renderFreeList(); }
+function reattach(note, n) { note.tags[n].sha = note.hashes[n - 1]; changed(note, n); }
+
+/* ---------- rendering: shell ---------- */
+function render() {
+  const has = state.notes.length > 0;
+  document.querySelectorAll("#tabs button").forEach(b => { b.disabled = !has; b.setAttribute("aria-selected", b.dataset.tab === state.tab); });
+  $("#side").classList.toggle("hidden", !(has && state.tab === "code"));
+  renderFreeList(); renderSide(); updateStatus();
+  ({code: renderCode, summary: renderSummary, bycode: renderByCode, search: renderSearch}[state.tab])();
+}
+function renderFreeList() { $("#freelist").innerHTML = allFree().map(f => `<option value="${esc(f)}">`).join(""); }
+
+function emptyState() {
+  $("#main").innerHTML = `<div class="empty"><h2>Open your notes folder to begin</h2>
+  <p>Everything stays on this computer. This page has no connection to the internet and cannot send anything anywhere.</p>
+  <ol><li>Click <b>Open notes folder…</b> (try the <code>sample_notes</code> folder first).</li>
+  <li>Pick a note on the left, then click codes under each passage.</li>
+  <li>${"showDirectoryPicker" in window ? "Your tags are saved automatically as <code>.tags.json</code> files beside each note." : "This browser can’t save into the folder directly, so use <b>Download tag files</b> when you finish. For automatic saving, open this page in Chrome or Edge."}</li></ol></div>`;
+}
+
+function renderSide() {
+  const side = $("#side"); if (!state.notes.length) return;
+  const q = state.filter.toLowerCase(), groups = new Map();
+  for (const n of state.notes) {
+    if (q && !(n.name + " " + n.site + " " + n.agency).toLowerCase().includes(q)) continue;
+    const g = groups.get(n.agency) || groups.set(n.agency, new Map()).get(n.agency);
+    (g.get(n.site) || g.set(n.site, []).get(n.site)).push(n);
+  }
+  let html = `<input type="search" id="filter" placeholder="Filter notes…" value="${esc(state.filter)}">`;
+  for (const agency of [...groups.keys()].sort((a, b) => agencyOrder(a) - agencyOrder(b))) {
+    html += `<h3>${esc(agency)}</h3>`;
+    for (const site of [...groups.get(agency).keys()].sort((a, b) => a.localeCompare(b))) {
+      html += `<h4>${esc(site)}</h4>`;
+      for (const n of groups.get(agency).get(site)) {
+        const t = Object.keys(n.tags).length;
+        html += `<button class="nitem ${n === state.current ? "active" : ""}" data-note="${esc(n.name)}">${esc(n.name)}<small>${esc(n.date)} · ${t}/${n.passages.length} tagged</small></button>`;
+      }
+    }
+  }
+  const hadFocus = document.activeElement && document.activeElement.id === "filter";
+  side.innerHTML = html;
+  if (hadFocus) { const f = $("#filter"); f.focus(); f.setSelectionRange(f.value.length, f.value.length); }
+}
+
+/* ---------- rendering: coding view ---------- */
+function cardHTML(note, n) {
+  const e = note.tags[n] || {codes: [], free: []}, stale = staleSet(note).has(n), on = !stale && (e.codes.length || e.free.length);
+  const chips = FIXED.map((c, i) => `<button class="chip ${CLS[c]} ${e.codes.includes(c) ? "on" : ""}" data-act="fixed" data-code="${c}" aria-pressed="${e.codes.includes(c)}" ${stale ? "disabled" : ""}><kbd>${i + 1}</kbd>${LABEL[c]}</button>`).join("");
+  const free = e.free.map(f => `<span class="fchip">${esc(f)}<button data-act="rmfree" data-free="${esc(f)}" aria-label="Remove ${esc(f)}" ${stale ? "disabled" : ""}>×</button></span>`).join("");
+  const staleBox = stale ? `<div class="stalebox">⚠ This passage was edited after it was tagged (${esc([...e.codes, ...e.free].join(", "))}).
+    <button class="btn" data-act="reattach">Keep tags on new text</button><button class="btn" data-act="discard">Discard tags</button></div>` : "";
+  return `<article class="card ${on ? "tagged" : ""} ${stale ? "stale" : ""}" data-n="${n}" tabindex="0">
+    <div class="num">${n}</div><div class="body"><p class="text">${esc(note.passages[n - 1])}</p>
+    <div class="codes">${chips}</div>
+    <div class="free">${free}<input class="freeinput" list="freelist" placeholder="Add free-text code, then Enter" ${stale ? "disabled" : ""}></div>${staleBox}</div></article>`;
+}
+function renderCode() {
+  const note = state.current, main = $("#main");
+  if (!note) return emptyState();
+  const tagged = Object.keys(note.tags).filter(k => +k <= note.passages.length).length, pct = note.passages.length ? Math.round(100 * tagged / note.passages.length) : 0;
+  const warn = note.site === UNKNOWN || note.agency === UNKNOWN
+    ? `<div class="warnbox">⚠ This note’s front matter is missing a <code>site</code> or has an <code>agency</code> that isn’t one of: ${AGENCIES.join(", ")}${note.agencyRaw ? " (found “" + esc(note.agencyRaw) + "”)" : ""}. It will be grouped under “${UNKNOWN}”.</div>` : "";
+  main.innerHTML = `<div class="wrap"><div class="notehead"><h2>${esc(note.name)}</h2>
+    <div class="meta">${esc(note.site)} · ${esc(note.agency)}${note.date ? " · " + esc(note.date) : ""}</div></div>${warn}
+    <div class="bar" title="${pct}% of passages tagged"><i style="width:${pct}%"></i></div>
+    <p class="meta" style="margin-top:-8px">Click a passage, then press <b>1–4</b> to toggle codes, <b>j</b>/<b>k</b> to move between passages.</p>
+    ${note.passages.map((_, i) => cardHTML(note, i + 1)).join("")}<div id="orphans"></div></div>`;
+  renderOrphans();
+}
+function renderCard(note, n) {
+  if (note !== state.current) return;
+  const old = $(`.card[data-n="${n}"]`); if (!old) return;
+  const hadFocus = old.contains(document.activeElement), wasFree = document.activeElement && document.activeElement.classList.contains("freeinput");
+  const tpl = document.createElement("div"); tpl.innerHTML = cardHTML(note, n);
+  const fresh = tpl.firstElementChild; old.replaceWith(fresh);
+  if (hadFocus) (wasFree ? fresh.querySelector(".freeinput") : fresh).focus();
+  const bar = $(".bar"); if (bar) { const t = Object.keys(note.tags).filter(k => +k <= note.passages.length).length, p = Math.round(100 * t / note.passages.length); bar.firstElementChild.style.width = p + "%"; }
+}
+function renderOrphans() {
+  const note = state.current, box = $("#orphans"); if (!box || !note) return;
+  const orphans = Object.keys(note.tags).map(Number).filter(n => n < 1 || n > note.passages.length);
+  box.innerHTML = orphans.length ? `<div class="warnbox"><b>Tags for passages that no longer exist:</b><br>${orphans.map(n => `Passage ${n}: ${esc([...note.tags[n].codes, ...note.tags[n].free].join(", "))} <button class="btn" data-act="discard-orphan" data-n="${n}">Discard</button>`).join("<br>")}</div>` : "";
+}
+
+/* ---------- rendering: summary ---------- */
+function buildSummary(by, detail) {
+  const counts = {}, cols = new Set(), bump = (k, c) => { (counts[k] = counts[k] || {})[c] = (counts[k][c] || 0) + 1; };
+  for (const {note, keys} of tagged()) {
+    const col = by === "agency" ? note.agency : note.site; cols.add(col);
+    bump("__any", col);
+    if (keys.some(k => k.startsWith(FREE))) bump("__free", col);
+    for (const k of keys) if (FIXED.includes(k) || detail) bump(k, col);
+  }
+  const columns = [...cols].sort(by === "agency" ? (a, b) => agencyOrder(a) - agencyOrder(b) : (a, b) => a.localeCompare(b));
+  let rows = [...FIXED];
+  rows = detail ? rows.concat(Object.keys(counts).filter(k => k.startsWith(FREE)).sort()) : rows.concat("__free");
+  rows.push("__any");
+  const names = {__free: "free-text (any)", __any: "TOTAL tagged passages"};
+  return {columns, rows: rows.map(r => ({key: r, name: names[r] || codeLabel(r),
+    cells: columns.map(c => (counts[r] || {})[c] || 0)}))};
+}
+function renderSummary() {
+  const {by, detail} = state.summary, {columns, rows} = buildSummary(by, detail);
+  $("#main").innerHTML = `<div class="wrap"><div class="toolbar"><label>Group columns by
+    <select id="sumBy"><option value="agency" ${by === "agency" ? "selected" : ""}>Agency</option><option value="site" ${by === "site" ? "selected" : ""}>Field site</option></select></label>
+    <label><input type="checkbox" id="sumDetail" ${detail ? "checked" : ""}> One row per free-text code</label></div>
+    <p class="meta">Counts are tagged passages. A passage with two codes counts once under each code, and once in the total.</p>
+    ${columns.length ? `<table><thead><tr><th>Code</th>${columns.map(c => `<th>${esc(c)}</th>`).join("")}<th>Total</th></tr></thead><tbody>
+    ${rows.map(r => `<tr class="${r.key === "__any" ? "total" : ""}"><td>${esc(r.name)}</td>${r.cells.map(v => `<td>${v}</td>`).join("")}<td>${r.cells.reduce((a, b) => a + b, 0)}</td></tr>`).join("")}</tbody></table>` : `<p>Nothing is tagged yet.</p>`}</div>`;
+}
+
+/* ---------- rendering: passages by code ---------- */
+function groupByCode(only) {
+  const groups = {};
+  for (const item of tagged()) for (const k of item.keys) {
+    if (only && k !== only) continue;
+    const gk = item.note.site + "\u0000" + item.note.agency;
+    ((groups[k] = groups[k] || {})[gk] = groups[k][gk] || []).push(item);
+  }
+  return groups;
+}
+function exportMarkdown(only) {
+  const groups = groupByCode(only), keys = Object.keys(groups).sort(cmpCode);
+  if (!keys.length) return "# Fieldnote export\n\n_No tagged passages match._\n";
+  const out = ["# Fieldnote export", ""];
+  for (const k of keys) {
+    out.push("## " + plainLabel(k), "");
+    const gks = Object.keys(groups[k]).sort((a, b) => { const [sa, aa] = a.split("\u0000"), [sb, ab] = b.split("\u0000"); return sa.toLowerCase().localeCompare(sb.toLowerCase()) || agencyOrder(aa) - agencyOrder(ab); });
+    for (const gk of gks) {
+      const [site, agency] = gk.split("\u0000"); out.push(`### ${site} — ${agency}`, "");
+      for (const {note, n, text, keys: ks} of groups[k][gk]) {
+        const others = ks.filter(o => o !== k).map(plainLabel).join(", ");
+        out.push("> " + text.replace(/\n/g, "\n> "), "", `— *${note.name} §${n}${note.date ? ", " + note.date : ""}*` + (others ? ` · also: ${others}` : ""), "");
+      }
+    }
+  }
+  return out.join("\n");
+}
+function renderByCode() {
+  const groups = groupByCode(state.bycode), keys = Object.keys(groups).sort(cmpCode);
+  const options = [...FIXED, ...allFree().map(f => FREE + f)];
+  let html = `<div class="wrap"><div class="toolbar"><label>Show code
+    <select id="byCodeSel"><option value="">All codes</option>${options.map(o => `<option value="${esc(o)}" ${o === state.bycode ? "selected" : ""}>${esc(plainLabel(o))}</option>`).join("")}</select></label>
+    <span class="spacer"></span><button class="btn" id="copyMd">Copy as markdown</button><button class="btn" id="saveMd">Download .md</button></div>`;
+  if (!keys.length) html += "<p>No tagged passages match.</p>";
+  for (const k of keys) {
+    html += `<section class="group"><h2>${esc(codeLabel(k))}</h2>`;
+    const gks = Object.keys(groups[k]).sort((a, b) => { const [sa, aa] = a.split("\u0000"), [sb, ab] = b.split("\u0000"); return sa.toLowerCase().localeCompare(sb.toLowerCase()) || agencyOrder(aa) - agencyOrder(ab); });
+    for (const gk of gks) {
+      const [site, agency] = gk.split("\u0000"); html += `<h3>${esc(site)} — ${esc(agency)}</h3>`;
+      for (const {note, n, text, keys: ks} of groups[k][gk]) {
+        const others = ks.filter(o => o !== k).map(codeLabel).join(", ");
+        html += `<blockquote>${esc(text)}</blockquote><div class="cite">${esc(note.name)} §${n}${note.date ? ", " + esc(note.date) : ""}${others ? " · also: " + esc(others) : ""} · <a data-act="goto" data-note="${esc(note.name)}" data-n="${n}">open</a></div>`;
+      }
+    }
+    html += "</section>";
+  }
+  $("#main").innerHTML = html + "</div>";
+}
+
+/* ---------- rendering: search ---------- */
+function runSearch() {
+  const s = state.search; if (!s.q) return [];
+  let re; try { re = new RegExp(s.regex ? s.q : s.q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i"); } catch (e) { return null; }
+  const wantAgency = s.agency || null, hits = [];
+  for (const note of state.notes) {
+    if (s.site && note.site.toLowerCase() !== s.site.toLowerCase()) continue;
+    if (wantAgency && note.agency !== wantAgency) continue;
+    const stale = staleSet(note);
+    note.passages.forEach((text, i) => {
+      const n = i + 1, keys = stale.has(n) ? [] : keysFor(note, n);
+      if (s.code && !keys.includes(s.code)) return;
+      if (re.test(text) || keys.some(k => k.startsWith(FREE) && re.test(k))) hits.push({note, n, text, keys, re});
+    });
+  }
+  return hits;
+}
+function highlight(text, re) {
+  const g = new RegExp(re.source, "gi"); let out = "", last = 0, m;
+  while ((m = g.exec(text)) && m[0] !== "") { out += esc(text.slice(last, m.index)) + "<mark>" + esc(m[0]) + "</mark>"; last = m.index + m[0].length; }
+  return out + esc(text.slice(last));
+}
+function renderSearch() {
+  const s = state.search, sites = [...new Set(state.notes.map(n => n.site))].sort((a, b) => a.localeCompare(b));
+  const options = [...FIXED, ...allFree().map(f => FREE + f)];
+  $("#main").innerHTML = `<div class="wrap"><div class="toolbar">
+    <input type="search" id="q" placeholder="Search passages and free-text codes…" value="${esc(s.q)}" style="flex:1;min-width:240px">
+    <label><input type="checkbox" id="rx" ${s.regex ? "checked" : ""}> regex</label></div>
+    <div class="toolbar"><label>Code <select id="sCode"><option value="">any</option>${options.map(o => `<option value="${esc(o)}" ${o === s.code ? "selected" : ""}>${esc(plainLabel(o))}</option>`).join("")}</select></label>
+    <label>Site <select id="sSite"><option value="">any</option>${sites.map(o => `<option ${o === s.site ? "selected" : ""}>${esc(o)}</option>`).join("")}</select></label>
+    <label>Agency <select id="sAgency"><option value="">any</option>${AGENCIES.map(o => `<option ${o === s.agency ? "selected" : ""}>${esc(o)}</option>`).join("")}</select></label></div>
+    <div id="results"></div></div>`;
+  renderResults(); const q = $("#q"); q.focus(); q.setSelectionRange(q.value.length, q.value.length);
+}
+function renderResults() {
+  const hits = runSearch(), box = $("#results");
+  if (hits === null) { box.innerHTML = `<p class="meta">That isn’t a valid regular expression.</p>`; return; }
+  if (!state.search.q) { box.innerHTML = `<p class="meta">Type to search.</p>`; return; }
+  box.innerHTML = `<p class="meta">${hits.length} passage(s)</p>` + hits.map(h => `<div class="hit"><div class="where">${esc(h.note.name)} §${h.n} · ${esc(h.note.site)} · ${esc(h.note.agency)}${h.keys.length ? " · " + esc(h.keys.map(codeLabel).join(", ")) : ""} · <a style="color:var(--accent);cursor:pointer;text-decoration:underline" data-act="goto" data-note="${esc(h.note.name)}" data-n="${h.n}">open</a></div>${highlight(h.text, h.re)}</div>`).join("");
+}
+
+/* ---------- navigation ---------- */
+function gotoPassage(name, n) {
+  state.current = state.notes.find(x => x.name === name) || state.current; state.tab = "code"; render();
+  const card = $(`.card[data-n="${n}"]`); if (card) { card.scrollIntoView({block: "center"}); card.focus(); }
+}
+function toast(msg) {
+  const t = document.createElement("div"); t.className = "toast"; t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), 6000);
+}
+
+/* ---------- events ---------- */
+$("#openBtn").addEventListener("click", async () => {
+  if ("showDirectoryPicker" in window) {
+    try { await loadFromDirHandle(await window.showDirectoryPicker({mode: "readwrite"})); }
+    catch (e) { if (e.name !== "AbortError") toast("Could not open folder: " + e.message); }
+  } else $("#folderInput").click();
+});
+$("#folderInput").addEventListener("change", async e => { if (e.target.files.length) await loadFromFileList(e.target.files); e.target.value = ""; });
+$("#dlBtn").addEventListener("click", downloadTags);
+$("#tabs").addEventListener("click", e => { const b = e.target.closest("button[data-tab]"); if (b && !b.disabled) { state.tab = b.dataset.tab; render(); } });
+
+document.addEventListener("click", e => {
+  const noteBtn = e.target.closest("[data-note]:not([data-act])");
+  if (noteBtn) { state.current = state.notes.find(n => n.name === noteBtn.dataset.note); render(); return; }
+  const a = e.target.closest("[data-act]"); if (!a) return;
+  const card = a.closest(".card"), n = card ? +card.dataset.n : +a.dataset.n, note = state.current;
+  switch (a.dataset.act) {
+    case "fixed": toggleFixed(note, n, a.dataset.code); break;
+    case "rmfree": removeFree(note, n, a.dataset.free); break;
+    case "discard": case "discard-orphan": discardTags(note, n); break;
+    case "reattach": reattach(note, n); break;
+    case "goto": gotoPassage(a.dataset.note, n); break;
+  }
+});
+document.addEventListener("keydown", e => {
+  if (e.target.classList && e.target.classList.contains("freeinput") && e.key === "Enter") {
+    e.preventDefault(); const card = e.target.closest(".card"); addFree(state.current, +card.dataset.n, e.target.value); return;
+  }
+  if (state.tab !== "code" || e.ctrlKey || e.metaKey || e.altKey || /^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)) return;
+  const card = e.target.closest && e.target.closest(".card"); if (!card) return;
+  const n = +card.dataset.n;
+  if (e.key >= "1" && e.key <= "4") { e.preventDefault(); toggleFixed(state.current, n, FIXED[+e.key - 1]); }
+  else if (e.key === "j" || e.key === "k") {
+    const next = $(`.card[data-n="${n + (e.key === "j" ? 1 : -1)}"]`); if (next) { next.focus(); next.scrollIntoView({block: "nearest"}); }
+  }
+});
+document.addEventListener("input", e => {
+  if (e.target.id === "filter") { state.filter = e.target.value; renderSide(); }
+  else if (e.target.id === "q") { state.search.q = e.target.value; renderResults(); }
+});
+document.addEventListener("change", e => {
+  const id = e.target.id, v = e.target.type === "checkbox" ? e.target.checked : e.target.value;
+  if (id === "sumBy") { state.summary.by = v; renderSummary(); }
+  else if (id === "sumDetail") { state.summary.detail = v; renderSummary(); }
+  else if (id === "byCodeSel") { state.bycode = v; renderByCode(); }
+  else if (id === "rx") { state.search.regex = v; renderResults(); }
+  else if (id === "sCode") { state.search.code = v; renderResults(); }
+  else if (id === "sSite") { state.search.site = v; renderResults(); }
+  else if (id === "sAgency") { state.search.agency = v; renderResults(); }
+});
+$("#main").addEventListener("click", e => {
+  if (e.target.id === "copyMd") navigator.clipboard.writeText(exportMarkdown(state.bycode)).then(() => toast("Copied to clipboard"), () => toast("Copy blocked by the browser; use Download instead."));
+  if (e.target.id === "saveMd") {
+    const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([exportMarkdown(state.bycode)], {type: "text/markdown"}));
+    a.download = "fieldcode-export.md"; document.body.appendChild(a); a.click(); a.remove();
+  }
+});
+emptyState();
+</script>
+</body>
+</html>

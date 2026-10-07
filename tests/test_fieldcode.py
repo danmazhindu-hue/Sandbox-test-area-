@@ -137,6 +137,13 @@ class SafetyTests(Base):
         src = (PROJECT / "fieldcode.py").read_text()
         self.assertIsNone(re.search(banned, src, re.M))
 
+    def test_html_page_is_offline(self):
+        html = (PROJECT / "fieldcode.html").read_text()
+        self.assertIn("default-src 'none'", html)
+        self.assertIsNone(re.search(r"https?://|<script[^>]*\bsrc=|<link[^>]*href=|@import|url\(", html))
+        for banned in ("fetch(", "XMLHttpRequest", "WebSocket", "sendBeacon", "localStorage", "sessionStorage", "indexedDB", "EventSource"):
+            self.assertNotIn(banned, html)
+
     def test_sample_notes_are_clean(self):
         c = fc.Corpus(PROJECT / "sample_notes", PROJECT)
         self.assertEqual(fc.check(c), [])
