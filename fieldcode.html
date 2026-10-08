@@ -95,6 +95,18 @@ blockquote{margin:0 0 4px;padding:8px 14px;border-left:3px solid var(--line);bac
 mark{background:#ffe27a;color:#222;border-radius:3px;padding:0 1px}
 .toast{position:fixed;right:16px;bottom:16px;background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;max-width:420px;box-shadow:0 4px 16px rgba(0,0,0,.25);z-index:9}
 .warnbox{background:var(--warn-bg);color:var(--warn);border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:14px}
+dialog{border:1px solid var(--line);border-radius:14px;background:var(--panel);color:var(--ink);padding:22px 24px;width:min(560px,94vw);box-shadow:0 12px 40px rgba(0,0,0,.3)}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+dialog h2{margin:0 0 14px;font-size:19px}
+.field{display:block;margin-bottom:12px;font-size:13px;color:var(--muted)}
+.field input,.field select,.field textarea{display:block;width:100%;margin-top:3px;padding:7px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font-size:15px}
+.field textarea{min-height:150px;resize:vertical;line-height:1.5;font-family:inherit}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.actions{display:flex;gap:10px;justify-content:flex-end;margin-top:6px}
+.err{color:var(--warn);font-size:13px;min-height:1.3em;margin:0 0 6px}
+details.add{margin-top:8px;background:var(--panel);border:1px dashed var(--line);border-radius:10px;padding:10px 14px}
+details.add summary{cursor:pointer;font-weight:600}
+details.add textarea{width:100%;min-height:120px;margin:10px 0;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit;resize:vertical}
 .hidden{display:none!important}
 @media (max-width:760px){ #layout{flex-direction:column} #side{width:auto;max-height:36vh;border-right:0;border-bottom:1px solid var(--line)} #main{padding:14px} }
 </style>
@@ -105,7 +117,8 @@ mark{background:#ffe27a;color:#222;border-radius:3px;padding:0 1px}
   <span class="badge" title="A content-security-policy in this file blocks all network requests">🔒 Offline: nothing leaves this computer</span>
   <span class="spacer"></span>
   <span id="status"></span>
-  <button class="btn" id="dlBtn" hidden>Download tag files</button>
+  <button class="btn" id="dlBtn" hidden>Download changed files</button>
+  <button class="btn" id="newBtn">+ New note</button>
   <button class="btn primary" id="openBtn">Open notes folder…</button>
   <input type="file" id="folderInput" webkitdirectory multiple hidden>
 </header>
@@ -120,6 +133,20 @@ mark{background:#ffe27a;color:#222;border-radius:3px;padding:0 1px}
   <main id="main"></main>
 </div>
 <datalist id="freelist"></datalist>
+<datalist id="sitelist"></datalist>
+<dialog id="newDlg" aria-labelledby="newTitle">
+  <h2 id="newTitle">New note (one incident or visit)</h2>
+  <div class="row2">
+    <label class="field">Date<input type="date" id="nDate"></label>
+    <label class="field">Agency<select id="nAgency"></select></label>
+  </div>
+  <label class="field">Field site<input type="text" id="nSite" list="sitelist" placeholder="e.g. Aldermoor Fell" autocomplete="off"></label>
+  <label class="field">Title (optional)<input type="text" id="nTitle" placeholder="e.g. Callout night at the base" autocomplete="off"></label>
+  <label class="field">Your notes (optional now; you can add more later)
+    <textarea id="nBody" placeholder="Write what you saw and heard. Leave a blank line between passages: each paragraph becomes one passage you can code."></textarea></label>
+  <p class="err" id="nErr"></p>
+  <div class="actions"><button class="btn" id="nCancel">Cancel</button><button class="btn primary" id="nCreate">Create and start coding</button></div>
+</dialog>
 
 <script>
 "use strict";
@@ -198,6 +225,7 @@ function buildNote(name, text, tagsText, extra) {
   const {meta, passages} = parseNote(text);
   const note = Object.assign({name, site: meta.site || UNKNOWN, agencyRaw: meta.agency || "", agency: normAgency(meta.agency),
     date: meta.date || "", passages, hashes: passages.map(passageSha), tags: {}, hadTagsFile: false, dirty: false,
+    raw: text, mdName: name.split("/").pop(), mdPending: false,
     tagsName: name.replace(/\.md$/i, "") .split("/").pop() + ".tags.json", queue: Promise.resolve()}, extra);
   if (tagsText != null) {
     try { note.tags = JSON.parse(tagsText).passages || {}; note.hadTagsFile = true; }
@@ -240,7 +268,7 @@ async function loadFromDirHandle(dir) {
     const tp = f.path.replace(/\.md$/i, ".tags.json"), t = byPath.get(tp);
     notes.push(buildNote(f.path, await (await f.handle.getFile()).text(), t ? await (await t.handle.getFile()).text() : null, {parent: f.parent}));
   }
-  state.mode = "fs"; state.folderName = dir.name; setNotes(notes);
+  state.mode = "fs"; state.root = dir; state.folderName = dir.name; setNotes(notes);
 }
 async function loadFromFileList(list) {
   const files = [...list].map(f => {
@@ -253,11 +281,11 @@ async function loadFromFileList(list) {
     const t = byPath.get(f.path.replace(/\.md$/i, ".tags.json"));
     notes.push(buildNote(f.path, await f.file.text(), t ? await t.file.text() : null, {}));
   }
-  state.mode = "files"; state.folderName = (list[0] && list[0].webkitRelativePath || "").split("/")[0] || "selected files"; setNotes(notes);
+  state.mode = "files"; state.root = null; state.folderName = (list[0] && list[0].webkitRelativePath || "").split("/")[0] || "selected files"; setNotes(notes);
 }
 function setNotes(notes) {
   state.notes = notes; state.current = notes[0] || null;
-  if (!notes.length) toast("No .md files found in that folder.");
+  if (!notes.length) toast("No notes in that folder yet. Click “+ New note” to start one.");
   render();
 }
 
@@ -266,13 +294,17 @@ const serialize = note => JSON.stringify({version: 1, passages: note.tags}, null
 function persist(note) {
   note.dirty = true; updateStatus();
   note.queue = note.queue.then(async () => {
-    if (!note.hadTagsFile && !Object.keys(note.tags).length) { note.dirty = false; return; }
+    const hasTags = note.hadTagsFile || Object.keys(note.tags).length > 0;
     if (state.mode === "fs") {
-      const fh = await note.parent.getFileHandle(note.tagsName, {create: true});
-      const w = await fh.createWritable(); await w.write(serialize(note)); await w.close();
-      note.hadTagsFile = true; note.dirty = false; state.lastSaved = new Date();
-    }
-  }).catch(e => toast("Could not save " + note.tagsName + ": " + e.message)).then(updateStatus);
+      if (note.mdPending) { await writeFile(note.parent, note.mdName, note.raw); note.mdPending = false; }
+      if (hasTags) { await writeFile(note.parent, note.tagsName, serialize(note)); note.hadTagsFile = true; }
+      note.dirty = false; state.lastSaved = new Date();
+    } else if (!note.mdPending && !hasTags) note.dirty = false;
+  }).catch(e => toast("Could not save " + note.name + ": " + e.message)).then(updateStatus);
+}
+async function writeFile(dir, name, text) {
+  const w = await (await dir.getFileHandle(name, {create: true})).createWritable();
+  await w.write(text); await w.close();
 }
 function updateStatus() {
   const el = $("#status"), dirty = state.notes.filter(n => n.dirty).length;
@@ -280,16 +312,21 @@ function updateStatus() {
   el.className = "";
   if (state.mode === "none") el.textContent = "";
   else if (state.mode === "fs") { el.textContent = dirty ? "Saving…" : "✓ Saved to “" + state.folderName + "”" + (state.lastSaved ? " at " + state.lastSaved.toLocaleTimeString() : " (autosave on)"); }
-  else { el.textContent = dirty ? dirty + " note(s) with unsaved tags: use “Download tag files”" : "No changes yet"; if (dirty) el.className = "unsaved"; }
+  else { el.textContent = dirty ? dirty + " note(s) with unsaved changes: click “Download changed files”" : "No changes yet"; if (dirty) el.className = "unsaved"; }
 }
 function downloadTags() {
-  const todo = state.notes.filter(n => n.dirty);
-  todo.forEach((n, i) => setTimeout(() => {
+  const files = [];
+  for (const n of state.notes.filter(n => n.dirty)) {
+    if (n.mdPending) files.push({n, name: n.mdName, text: n.raw, type: "text/markdown"});
+    if (n.hadTagsFile || Object.keys(n.tags).length) files.push({n, name: n.tagsName, text: serialize(n), type: "application/json"});
+  }
+  files.forEach((f, i) => setTimeout(() => {
     const a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob([serialize(n)], {type: "application/json"})); a.download = n.tagsName;
-    document.body.appendChild(a); a.click(); a.remove(); n.dirty = false; updateStatus();
+    a.href = URL.createObjectURL(new Blob([f.text], {type: f.type})); a.download = f.name;
+    document.body.appendChild(a); a.click(); a.remove();
+    if (i === files.length - 1) { files.forEach(x => { x.n.mdPending = false; x.n.dirty = false; }); updateStatus(); }
   }, i * 400));
-  if (todo.length) toast("Put the downloaded .tags.json files next to their notes, replacing the old ones.");
+  if (files.length) toast("Put the downloaded files into your notes folder, replacing any older copies.");
 }
 window.addEventListener("beforeunload", e => { if (state.mode === "files" && state.notes.some(n => n.dirty)) { e.preventDefault(); e.returnValue = ""; } });
 
@@ -318,6 +355,54 @@ function removeFree(note, n, text) {
 function discardTags(note, n) { delete note.tags[n]; persist(note); if (n <= note.passages.length) renderCard(note, n); renderSide(); renderOrphans(); renderFreeList(); }
 function reattach(note, n) { note.tags[n].sha = note.hashes[n - 1]; changed(note, n); }
 
+/* ---------- creating notes and adding text ---------- */
+const slug = s => s.toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40);
+const oneLine = s => s.replace(/\s+/g, " ").trim();
+const cleanBody = s => s.replace(/\r\n?/g, "\n").trim();
+function uniqueName(base) {
+  const taken = new Set(state.notes.map(n => n.name.toLowerCase()));
+  let name = base + ".md", i = 2;
+  while (taken.has(name.toLowerCase())) name = `${base}-${i++}.md`;
+  return name;
+}
+function createNote({date, agency, site, title, body}) {
+  site = oneLine(site || ""); title = oneLine(title || "");
+  if (!site) throw new Error("Please enter the field site.");
+  if (!AGENCIES.includes(agency)) throw new Error("Please choose an agency.");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date || "")) throw new Error("Please enter a date.");
+  const text = cleanBody(body || "");
+  const raw = `---\nsite: ${site}\nagency: ${agency}\ndate: ${date}\n---\n\n` + (title ? `# ${title}\n\n` : "") + (text ? text + "\n" : "");
+  const note = buildNote(uniqueName(`${date}_${slug(site) || "site"}_${slug(agency)}`), raw, null,
+    {parent: state.root, mdPending: true});
+  state.notes.push(note); state.notes.sort((a, b) => a.name.localeCompare(b.name));
+  state.current = note; state.tab = "code";
+  persist(note); render();
+  return note;
+}
+function appendText(note, text) {
+  text = cleanBody(text || ""); if (!text) { toast("Type some text to add first."); return; }
+  note.raw = note.raw.replace(/\s+$/, "") + "\n\n" + text + "\n";
+  const {passages} = parseNote(note.raw);
+  note.passages = passages; note.hashes = passages.map(passageSha); note.mdPending = true;
+  persist(note); render();
+  const cards = document.querySelectorAll(".card"); if (cards.length) cards[cards.length - 1].scrollIntoView({block: "center"});
+}
+function openNewDialog() {
+  if (state.mode === "none") {
+    // Chrome/Edge: need a folder first so the note can be saved. Other browsers: start in memory, save via download.
+    if ("showDirectoryPicker" in window) { toast("Open your notes folder first, so the new note can be saved there."); return; }
+    state.mode = "files"; state.root = null; state.folderName = "this session"; updateStatus();
+  }
+  $("#nAgency").innerHTML = AGENCIES.map(a => `<option>${esc(a)}</option>`).join("");
+  const cur = state.current;
+  if (cur && AGENCIES.includes(cur.agency)) $("#nAgency").value = cur.agency;
+  $("#nSite").value = cur && cur.site !== UNKNOWN ? cur.site : "";
+  $("#nDate").value = new Date().toLocaleDateString("en-CA");
+  $("#nTitle").value = ""; $("#nBody").value = ""; $("#nErr").textContent = "";
+  $("#sitelist").innerHTML = [...new Set(state.notes.map(n => n.site).filter(s => s !== UNKNOWN))].sort().map(s => `<option value="${esc(s)}">`).join("");
+  $("#newDlg").showModal(); $("#nSite").focus();
+}
+
 /* ---------- rendering: shell ---------- */
 function render() {
   const has = state.notes.length > 0;
@@ -329,10 +414,15 @@ function render() {
 function renderFreeList() { $("#freelist").innerHTML = allFree().map(f => `<option value="${esc(f)}">`).join(""); }
 
 function emptyState() {
+  if (state.mode !== "none") {
+    $("#main").innerHTML = `<div class="empty"><h2>This folder has no notes yet</h2>
+    <p>Click <b>+ New note</b> (top right) to start logging an incident or visit.</p></div>`;
+    return;
+  }
   $("#main").innerHTML = `<div class="empty"><h2>Open your notes folder to begin</h2>
   <p>Everything stays on this computer. This page has no connection to the internet and cannot send anything anywhere.</p>
-  <ol><li>Click <b>Open notes folder…</b> (try the <code>sample_notes</code> folder first).</li>
-  <li>Pick a note on the left, then click codes under each passage.</li>
+  <ol><li>Click <b>Open notes folder…</b>: choose <code>sample_notes</code> to practise, or your own (even empty) <code>notes</code> folder.</li>
+  <li>Click <b>+ New note</b> to log an incident, or pick a note on the left. Then click codes under each passage.</li>
   <li>${"showDirectoryPicker" in window ? "Your tags are saved automatically as <code>.tags.json</code> files beside each note." : "This browser can’t save into the folder directly, so use <b>Download tag files</b> when you finish. For automatic saving, open this page in Chrome or Edge."}</li></ol></div>`;
 }
 
@@ -382,7 +472,11 @@ function renderCode() {
     <div class="meta">${esc(note.site)} · ${esc(note.agency)}${note.date ? " · " + esc(note.date) : ""}</div></div>${warn}
     <div class="bar" title="${pct}% of passages tagged"><i style="width:${pct}%"></i></div>
     <p class="meta" style="margin-top:-8px">Click a passage, then press <b>1–4</b> to toggle codes, <b>j</b>/<b>k</b> to move between passages.</p>
-    ${note.passages.map((_, i) => cardHTML(note, i + 1)).join("")}<div id="orphans"></div></div>`;
+    ${note.passages.length ? "" : `<p class="warnbox">This note has no passages yet. Add some text below.</p>`}
+    ${note.passages.map((_, i) => cardHTML(note, i + 1)).join("")}<div id="orphans"></div>
+    <details class="add" ${note.passages.length ? "" : "open"}><summary>Add more text to this note</summary>
+      <textarea id="appendText" placeholder="New paragraphs are added to the end. Separate passages with a blank line. Existing passages and their tags are not changed."></textarea>
+      <button class="btn primary" data-act="append">Add passages</button></details></div>`;
   renderOrphans();
 }
 function renderCard(note, n) {
@@ -535,6 +629,14 @@ $("#openBtn").addEventListener("click", async () => {
 });
 $("#folderInput").addEventListener("change", async e => { if (e.target.files.length) await loadFromFileList(e.target.files); e.target.value = ""; });
 $("#dlBtn").addEventListener("click", downloadTags);
+$("#newBtn").addEventListener("click", openNewDialog);
+$("#nCancel").addEventListener("click", () => $("#newDlg").close());
+$("#nCreate").addEventListener("click", () => {
+  try {
+    createNote({date: $("#nDate").value, agency: $("#nAgency").value, site: $("#nSite").value, title: $("#nTitle").value, body: $("#nBody").value});
+    $("#newDlg").close();
+  } catch (e) { $("#nErr").textContent = e.message; }
+});
 $("#tabs").addEventListener("click", e => { const b = e.target.closest("button[data-tab]"); if (b && !b.disabled) { state.tab = b.dataset.tab; render(); } });
 
 document.addEventListener("click", e => {
@@ -547,6 +649,7 @@ document.addEventListener("click", e => {
     case "rmfree": removeFree(note, n, a.dataset.free); break;
     case "discard": case "discard-orphan": discardTags(note, n); break;
     case "reattach": reattach(note, n); break;
+    case "append": appendText(note, $("#appendText").value); break;
     case "goto": gotoPassage(a.dataset.note, n); break;
   }
 });

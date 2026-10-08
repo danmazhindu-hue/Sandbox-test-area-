@@ -28,12 +28,13 @@ For real work: `python3 fieldcode.py init`, put notes in `notes/` (the default `
 
 Prefer not to use the terminal? Open `fieldcode.html` by double-clicking it (use **Chrome or Edge** for automatic saving). Click **Open notes folder…**, choose `sample_notes` to try it (or your own `notes/`), then:
 
+- **Start a new log:** click **+ New note**, pick the date, agency and field site (and an optional title), and type or paste what you observed. Leave a blank line between passages, since each paragraph becomes one passage you can code. **Create and start coding** saves it into your folder as `YYYY-MM-DD_site_agency.md`, and you can add more text to the end of a note later with **Add more text to this note**. Existing passages and their tags are never changed by adding text. Starting from an empty folder works too. (Edit older text in a normal text editor, and the page will flag the affected tags as stale.)
 - **Code notes:** pick a note on the left; click the code buttons under each passage (or press `1`-`4`; `j`/`k` move between passages). Type a free-text code and press Enter. Every click updates the counts and, in Chrome/Edge, is written straight into the same `.tags.json` files the command-line tool uses, so the two always agree.
 - **Summary:** the count table, by agency or by field site.
 - **Passages by code:** everything per code, grouped by site and agency. Copy it or download it as markdown.
 - **Search:** text or regex, filtered by code, site or agency.
 
-Firefox and Safari can't write into a folder, so there the page works in an edit-in-memory mode and you finish with **Download tag files**, then put the downloaded files next to their notes. If you edit a note's text later, affected passages show a warning and you choose to keep or discard their tags.
+Firefox and Safari can't write into a folder, so there the page works in an edit-in-memory mode and you finish with **Download changed files** (new notes and tag files), then put the downloaded files into your notes folder. If you edit a note's text later, affected passages show a warning and you choose to keep or discard their tags.
 
 How it stays private: it is one self-contained file with no libraries, fonts or images fetched from anywhere. A content-security-policy inside it blocks every network request (`default-src 'none'`), and it never uses browser storage, so your text lives only in the page's memory and the files you choose to save. Note text is always HTML-escaped. Tests check the policy and that the page agrees with the Python tool.
 

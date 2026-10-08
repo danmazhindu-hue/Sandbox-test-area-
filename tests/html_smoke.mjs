@@ -73,6 +73,37 @@ check(await page.locator(".card.stale").count() === 1, "edited passage is flagge
 await page.click('.card.stale [data-act="reattach"]');
 check(await page.locator(".card.stale").count() === 0, "stale tags can be re-attached explicitly");
 
+// New note through the dialog, then append text; Python must parse the result identically.
+await page.click("#newBtn");
+await page.fill("#nSite", "  Testmoor   Pass ");
+await page.selectOption("#nAgency", "Police Force B");
+await page.fill("#nDate", "2025-02-03");
+await page.fill("#nTitle", "Callout: night shift");
+await page.fill("#nBody", "First passage, a\nsecond line.\n\nSecond passage: with colon.");
+await page.click("#nCreate");
+const made = await page.evaluate(() => ({name: state.current.name, raw: state.current.raw, passages: state.current.passages, agency: state.current.agency, site: state.current.site}));
+check(made.name === "2025-02-03_testmoor-pass_police-force-b.md" && made.site === "Testmoor Pass" && made.agency === "Police Force B" && made.passages.length === 2,
+  "new note created with sensible filename and metadata");
+const parseWithPython = raw => JSON.parse(execFileSync("python3", ["-I", "-c",
+  "import sys,json; sys.path.insert(0, sys.argv[1]); import fieldcode as fc; print(json.dumps(fc.parse_note(sys.stdin.read())))", root], {input: raw, encoding: "utf8"}));
+let [pyMeta, pyPass] = parseWithPython(made.raw);
+check(JSON.stringify(pyPass) === JSON.stringify(made.passages) && pyMeta.site === "Testmoor Pass" && pyMeta.agency === "Police Force B", "Python parses the new note identically");
+await page.click('.card[data-n="1"] .chip[data-code="sop"]');
+await page.click("details.add summary");
+await page.fill("#appendText", "Third passage added later.\n\nFourth one.");
+await page.click('[data-act="append"]');
+const after = await page.evaluate(() => ({n: state.current.passages.length, stale: staleSet(state.current).size, tags: state.current.tags, raw: state.current.raw}));
+check(after.n === 4 && after.stale === 0 && after.tags[1].codes.join() === "sop", "appending text keeps existing tags valid");
+[pyMeta, pyPass] = parseWithPython(after.raw);
+check(pyPass.length === 4 && pyPass[3] === "Fourth one.", "Python still parses the note after appending");
+await page.click("#newBtn"); await page.fill("#nSite", "Testmoor Pass"); await page.selectOption("#nAgency", "Police Force B"); await page.fill("#nDate", "2025-02-03");
+await page.click("#nCreate");
+check(await page.evaluate(() => state.current.name) === "2025-02-03_testmoor-pass_police-force-b-2.md", "second note with same date/site/agency gets a unique name");
+await page.click("#newBtn"); await page.fill("#nSite", ""); await page.click("#nCreate");
+check((await page.textContent("#nErr")).includes("field site"), "dialog asks for a site if missing");
+await page.click("#nCancel");
+check(await page.evaluate(() => state.notes.filter(n => n.mdPending).length) === 2, "new notes are marked as needing download in fallback mode");
+
 // Search and views render.
 await page.click('#tabs [data-tab="search"]');
 await page.fill("#q", "paper");
